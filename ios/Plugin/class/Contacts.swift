@@ -16,16 +16,24 @@ class Contacts {
         let contactStore = CNContactStore()
 
         let keysToFetch = [
-            CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
-            CNContactPhoneNumbersKey,
+            CNContactTypeKey,
+            CNContactNamePrefixKey,
             CNContactGivenNameKey,
             CNContactMiddleNameKey,
             CNContactFamilyNameKey,
-            CNContactEmailAddressesKey,
-            CNContactThumbnailImageDataKey,
-            CNContactBirthdayKey,
+            CNContactNameSuffixKey,
             CNContactOrganizationNameKey,
-            CNContactJobTitleKey
+            CNContactJobTitleKey,
+            CNContactPostalAddressesKey,
+            CNContactEmailAddressesKey,
+            CNContactPhoneNumbersKey,
+            CNContactUrlAddressesKey,
+            CNContactSocialProfilesKey,
+            CNContactImageDataKey,
+            CNContactImageDataAvailableKey,
+            CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+            CNContactThumbnailImageDataKey,
+            CNContactBirthdayKey
         ] as [Any]
 
         // Get all the containers
@@ -50,6 +58,35 @@ class Contacts {
         let contactStore = CNContactStore()
         contacts = try contactStore.unifiedContacts(matching: predicate, keysToFetch: [CNContactVCardSerialization.descriptorForRequiredKeys()])
         return contacts
+    }
+    
+    class func findContactById(withIdentifier: String) throws -> CNContact?   {
+        let contactStore = CNContactStore()
+        let keysToFetch: [Any] = [
+            CNContactTypeKey,
+            CNContactNamePrefixKey,
+            CNContactGivenNameKey,
+            CNContactMiddleNameKey,
+            CNContactFamilyNameKey,
+            CNContactNameSuffixKey,
+            CNContactOrganizationNameKey,
+            CNContactJobTitleKey,
+            CNContactPostalAddressesKey,
+            CNContactEmailAddressesKey,
+            CNContactPhoneNumbersKey,
+            CNContactUrlAddressesKey,
+            CNContactSocialProfilesKey,
+            CNContactImageDataKey,
+            CNContactImageDataAvailableKey,
+            CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+            CNContactThumbnailImageDataKey,
+            CNContactBirthdayKey
+        ]
+
+        let contact = try contactStore.unifiedContact(withIdentifier: withIdentifier, keysToFetch: keysToFetch as! [CNKeyDescriptor])
+        
+        return contact
+        
     }
 
     class func getPostalAddressFromAddress(jsAddress: JSObject) -> CNMutablePostalAddress {

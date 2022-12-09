@@ -56,7 +56,6 @@ public class ContactsPlugin: CAPPlugin {
                                 "label": labelToAppend,
                                 "number": numberToAppend
                             ])
-                            print(phoneNumbers)
                         }
                         for email in contact.emailAddresses {
                             let emailToAppend = email.value as String
@@ -86,6 +85,7 @@ public class ContactsPlugin: CAPPlugin {
                         }
                         contactsArray.append(contactResult)
                     }
+                    
                     call.resolve([
                         "contacts": contactsArray
                     ])
@@ -126,7 +126,7 @@ public class ContactsPlugin: CAPPlugin {
             call.reject("Error during find contacts", error as? String)
         }
     }
-
+   
     @objc func saveContact(_ call: CAPPluginCall) {
         Permissions.contactPermission { granted in
             if !granted {
@@ -135,8 +135,27 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
-        let contact = CNMutableContact()
-
+        
+        let identifier = call.getString("identifier", "")
+        var isNew = true
+        var foundContact: CNContact?
+        
+        var contact = CNMutableContact()
+        
+        if(!identifier.isEmpty){
+            do {
+                try foundContact = Contacts.findContactById(withIdentifier: identifier)
+            
+                if(foundContact != nil) {
+                    isNew = false
+                    contact = foundContact!.mutableCopy() as! CNMutableContact
+                }
+            } catch let error as NSError {
+                print("find contact error")
+                print(error)
+            }
+        }
+        
         contact.contactType = CNContactType(rawValue: call.getInt("contactType", 0))!
 
         // Name information
@@ -146,12 +165,11 @@ public class ContactsPlugin: CAPPlugin {
         contact.middleName = call.getString("middleName", "")
         contact.familyName = call.getString("familyName", "")
         contact.nameSuffix = call.getString("nameSuffix", "")
-        contact.nickname = call.getString("nickname", "")
+        
 
         // Work information
 
         contact.jobTitle = call.getString("jobTitle", "")
-        contact.departmentName = call.getString("departmentName", "")
         contact.organizationName = call.getString("organizationName", "")
 
         // Addresses
@@ -194,11 +212,11 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
-        contact.note = call.getString("note", "")
+        // contact.note = call.getString("note", "")
 
-        if let birthday = self.birthdayFormatter.date(from: call.getString("birthday", "")) {
-            contact.birthday = Calendar.current.dateComponents([.day, .month, .year], from: birthday)
-        }
+        // if let birthday = self.birthdayFormatter.date(from: call.getString("birthday", "")) {
+        //     contact.birthday = Calendar.current.dateComponents([.day, .month, .year], from: birthday)
+        // }
 
         for value in call.getArray("socialProfiles", JSObject.self) ?? [] {
             if let profile = value["profile"] as? JSObject {
@@ -215,15 +233,32 @@ public class ContactsPlugin: CAPPlugin {
         }
 
         // --- Save
-
-        do {
-            let saveRequest = CNSaveRequest()
-            saveRequest.add(contact, toContainerWithIdentifier: nil)
-            try CNContactStore().execute(saveRequest)
-            call.resolve()
-        } catch let error as NSError {
-            call.reject("Error during saving new contact", error as? String)
+        
+        if(isNew) {
+            
+            do {
+                let saveRequest = CNSaveRequest()
+                saveRequest.add(contact, toContainerWithIdentifier: nil)
+                try CNContactStore().execute(saveRequest)
+                call.resolve(["result": contact])
+            } catch let error as NSError {
+                print(error)
+            }
+            
+        } else {
+            
+            do {
+                let saveRequest = CNSaveRequest()
+                saveRequest.update(contact)
+                try CNContactStore().execute(saveRequest)
+                call.resolve(["result": contact])
+            } catch let error as NSError {
+                print(error)
+            }
+            
         }
+        
+        
     }
 
 }
