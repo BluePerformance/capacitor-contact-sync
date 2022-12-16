@@ -280,23 +280,55 @@ public class ContactsPlugin: CAPPlugin {
             if let profile = givenContactSocialProfile["profile"] as? JSObject {
                 for socialProfile in socialProfiles ?? [] {
                     let foundContactSocialProfile = socialProfile.value
-                    if profile as? String ?? "" == foundContactSocialProfile.urlString {
+                    let profile_username = profile["username"] as? String ?? ""
+                    let profile_urlString = profile["urlString"] as? String ?? ""
+                    let profile_service = profile["service"] as? String ?? ""
+                    
+                    if
+                            profile_username == (foundContactSocialProfile.username)
+                            && profile_urlString == (foundContactSocialProfile.urlString)
+                            && profile_service == (foundContactSocialProfile.service)
+                    {
                         shouldAdd = false
                     }
                 }
+                print("adding profile")
                 if shouldAdd {
                     contact.socialProfiles.append(CNLabeledValue(
                         label: givenContactSocialProfile["label"] as? String,
-                       value: CNSocialProfile(
-                           urlString: profile["urlString"] as? String,
-                           username: profile["username"] as? String,
-                           userIdentifier: "", // TODO: what is this?
-                           service: profile["service"] as? String
-                       )
+                        value:  CNSocialProfile(
+                                   urlString: profile["urlString"] as? String,
+                                   username: profile["username"] as? String,
+                                   userIdentifier: "", // TODO: what is this?
+                                   service: profile["service"] as? String
+                               )
                     ))
                 }
             }
         }
+//        let socialProfiles = foundContact?.socialProfiles
+//        for givenContactSocialProfile in call.getArray("socialProfiles", JSObject.self) ?? [] {
+//            var shouldAdd = true
+//            if let profile = givenContactSocialProfile["profile"] as? JSObject {
+//                for socialProfile in socialProfiles ?? [] {
+//                    let foundContactSocialProfile = socialProfile.value
+//                    if profile as? String ?? "" == foundContactSocialProfile.urlString {
+//                        shouldAdd = false
+//                    }
+//                }
+//                if shouldAdd {
+//                    contact.socialProfiles.append(CNLabeledValue(
+//                        label: givenContactSocialProfile["label"] as? String,
+//                       value: CNSocialProfile(
+//                           urlString: profile["urlString"] as? String,
+//                           username: profile["username"] as? String,
+//                           userIdentifier: "", // TODO: what is this?
+//                           service: profile["service"] as? String
+//                       )
+//                    ))
+//                }
+//            }
+//        }
 
         // --- Save
         
