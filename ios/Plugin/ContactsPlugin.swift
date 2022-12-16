@@ -172,63 +172,129 @@ public class ContactsPlugin: CAPPlugin {
         contact.jobTitle = call.getString("jobTitle", "")
         contact.organizationName = call.getString("organizationName", "")
 
-        // Addresses
-
-        for value in call.getArray("emailAddresses", JSObject.self) ?? [] {
-            if let address = value["address"] as? NSString {
-                contact.emailAddresses.append(CNLabeledValue(
-                    label: value["label"] as? String,
-                    value: address
-                ))
+        // Email Addresses
+        let emails = foundContact?.emailAddresses
+        for givenContactAddress in call.getArray("emailAddresses", JSObject.self) ?? [] {
+            var shouldAdd = true
+            if let address = givenContactAddress["address"] as? NSString {
+                for email in emails ?? [] {
+                    let foundContactAddress = email.value
+                    if address == foundContactAddress {
+                        shouldAdd = false
+                    }
+                }
+                if shouldAdd {
+                    contact.emailAddresses.append(CNLabeledValue(
+                        label: givenContactAddress["label"] as? String,
+                        value: address
+                    ))
+                }
             }
         }
-
-        for value in call.getArray("urlAddresses", JSObject.self) ?? [] {
-            if let url = value["url"] as? NSString {
-                contact.urlAddresses.append(CNLabeledValue(
-                    label: value["label"] as? String,
-                    value: url
-                ))
+        
+        // URL Addresses
+        let urlAddresses = foundContact?.urlAddresses
+        for givenContactURLAddress in call.getArray("urlAddresses", JSObject.self) ?? [] {
+            var shouldAdd = true
+            if let url = givenContactURLAddress["url"] as? NSString {
+                for urlAddress in urlAddresses ?? [] {
+                    let foundContactURLAddress = urlAddress.value
+                    if url == foundContactURLAddress {
+                        shouldAdd = false
+                    }
+                }
+                if shouldAdd {
+                    contact.urlAddresses.append(CNLabeledValue(
+                        label: givenContactURLAddress["label"] as? String,
+                        value: url
+                    ))
+                }
             }
         }
-
-        for value in call.getArray("postalAddresses", JSObject.self) ?? [] {
-            if let address = value["address"] as? JSObject {
-                contact.postalAddresses.append(CNLabeledValue(
-                    label: value["label"] as? String,
-                    value: Contacts.getPostalAddressFromAddress(jsAddress: address)
-                ))
+        
+        // POSTAL Addresses
+        let postalAddresses = foundContact?.postalAddresses
+        for givenContactPostalAddress in call.getArray("postalAddresses", JSObject.self) ?? [] {
+            var shouldAdd = true
+            if let address = givenContactPostalAddress["address"] as? JSObject {
+                for postalAddress in postalAddresses ?? [] {
+                    let foundContactPostalAddress = postalAddress.value
+                    let address_street = address["street"] as? String ?? ""
+                    let address_state = address["state"] as? String ?? ""
+                    let address_city = address["city"] as? String ?? ""
+                    let address_country = address["country"] as? String ?? ""
+                    let address_postalCode = address["postalCode"] as? String ?? ""
+                    
+                    if
+                        address_street == (foundContactPostalAddress.street)
+                            && address_state == (foundContactPostalAddress.state)
+                            && address_city == (foundContactPostalAddress.city)
+                            && address_country == (foundContactPostalAddress.country)
+                            && address_postalCode == (foundContactPostalAddress.postalCode)
+                    {
+                        shouldAdd = false
+                    }
+                }
+                print("adding address")
+                if shouldAdd {
+                    contact.postalAddresses.append(CNLabeledValue(
+                        label: givenContactPostalAddress["label"] as? String,
+                        value: Contacts.getPostalAddressFromAddress(jsAddress: address)
+                    ))
+                }
             }
         }
-
+        
         // Other
-
-        for value in call.getArray("phoneNumbers", JSObject.self) ?? [] {
-            if let number = value["number"] as? String {
-                contact.phoneNumbers.append(CNLabeledValue(
-                    label: value["label"] as? String,
-                    value: CNPhoneNumber(stringValue: number)
-                ))
+        // Phone Numbers
+        let phoneNumbers = foundContact?.phoneNumbers
+        for givenContactPhoneNumber in call.getArray("phoneNumbers", JSObject.self) ?? [] {
+            var shouldAdd = true
+            if let number = givenContactPhoneNumber["number"] as? NSString {
+                for phoneNumber in phoneNumbers ?? [] {
+                    let foundContactPhoneNumber = phoneNumber.value as CNPhoneNumber
+                    if number == foundContactPhoneNumber.stringValue as NSString {
+                        shouldAdd = false
+                    }
+                }
+                if shouldAdd {
+                    contact.phoneNumbers.append(CNLabeledValue(
+                        label: givenContactPhoneNumber["label"] as? String,
+                        value: CNPhoneNumber(stringValue: number as String)
+                    ))
+                }
             }
         }
-
+        // NOTES
         // contact.note = call.getString("note", "")
 
+        // BIRTHDAY
         // if let birthday = self.birthdayFormatter.date(from: call.getString("birthday", "")) {
         //     contact.birthday = Calendar.current.dateComponents([.day, .month, .year], from: birthday)
         // }
 
-        for value in call.getArray("socialProfiles", JSObject.self) ?? [] {
-            if let profile = value["profile"] as? JSObject {
-                contact.socialProfiles.append(CNLabeledValue(
-                    label: value["label"] as? String,
-                    value: CNSocialProfile(
-                        urlString: profile["urlString"] as? String,
-                        username: profile["username"] as? String,
-                        userIdentifier: "", // TODO: what is this?
-                        service: profile["service"] as? String
-                    )
-                ))
+        // SOCIAL PROFILES
+        let socialProfiles = foundContact?.socialProfiles
+        for givenContactSocialProfile in call.getArray("socialProfiles", JSObject.self) ?? [] {
+            var shouldAdd = true
+            if let profile = givenContactSocialProfile["profile"] as? JSObject {
+                for socialProfile in socialProfiles ?? [] {
+                    let foundContactSocialProfile = socialProfile.value
+                    if profile as? String ?? "" == foundContactSocialProfile.urlString {
+                        shouldAdd = false
+                    }
+                }
+                if shouldAdd {
+                    contact.socialProfiles.append(CNLabeledValue(
+                        label: givenContactSocialProfile["label"] as? String,
+                       value: CNSocialProfile(
+                           urlString: profile["urlString"] as? String,
+                           username: profile["username"] as? String,
+                           userIdentifier: "", // TODO: what is this?
+                           service: profile["service"] as? String
+                       )
+                    ))
+                }
             }
         }
 
