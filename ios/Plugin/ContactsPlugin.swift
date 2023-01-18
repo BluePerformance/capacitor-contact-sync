@@ -85,7 +85,7 @@ public class ContactsPlugin: CAPPlugin {
                         }
                         contactsArray.append(contactResult)
                     }
-                    
+
                     call.resolve([
                         "contacts": contactsArray
                     ])
@@ -126,7 +126,7 @@ public class ContactsPlugin: CAPPlugin {
             call.reject("Error during find contacts", error as? String)
         }
     }
-   
+
     @objc func saveContact(_ call: CAPPluginCall) {
         Permissions.contactPermission { granted in
             if !granted {
@@ -135,17 +135,17 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
-        
+
         let identifier = call.getString("identifier", "")
         var isNew = true
         var foundContact: CNContact?
-        
+
         var contact = CNMutableContact()
-        
+
         if(!identifier.isEmpty){
             do {
                 try foundContact = Contacts.findContactById(withIdentifier: identifier)
-            
+
                 if(foundContact != nil) {
                     isNew = false
                     contact = foundContact!.mutableCopy() as! CNMutableContact
@@ -155,7 +155,7 @@ public class ContactsPlugin: CAPPlugin {
                 print(error)
             }
         }
-        
+
         contact.contactType = CNContactType(rawValue: call.getInt("contactType", 0))!
 
         // Name information
@@ -165,7 +165,14 @@ public class ContactsPlugin: CAPPlugin {
         contact.middleName = call.getString("middleName", "")
         contact.familyName = call.getString("familyName", "")
         contact.nameSuffix = call.getString("nameSuffix", "")
-        
+
+        // Image
+
+        let image = call.getString("image", "")
+        if(image != "") {
+            let url = URL(string: image)
+            contact.imageData = try? Data(contentsOf: url!)
+        }
 
         // Work information
 
@@ -191,7 +198,7 @@ public class ContactsPlugin: CAPPlugin {
                 }
             }
         }
-        
+
         // URL Addresses
         let urlAddresses = foundContact?.urlAddresses
         for givenContactURLAddress in call.getArray("urlAddresses", JSObject.self) ?? [] {
@@ -211,7 +218,7 @@ public class ContactsPlugin: CAPPlugin {
                 }
             }
         }
-        
+
         // POSTAL Addresses
         let postalAddresses = foundContact?.postalAddresses
         for givenContactPostalAddress in call.getArray("postalAddresses", JSObject.self) ?? [] {
@@ -224,7 +231,7 @@ public class ContactsPlugin: CAPPlugin {
                     let address_city = address["city"] as? String ?? ""
                     let address_country = address["country"] as? String ?? ""
                     let address_postalCode = address["postalCode"] as? String ?? ""
-                    
+
                     if
                         address_street == (foundContactPostalAddress.street)
                             && address_state == (foundContactPostalAddress.state)
@@ -244,7 +251,7 @@ public class ContactsPlugin: CAPPlugin {
                 }
             }
         }
-        
+
         // Other
         // Phone Numbers
         let phoneNumbers = foundContact?.phoneNumbers
@@ -283,7 +290,7 @@ public class ContactsPlugin: CAPPlugin {
                     let profile_username = profile["username"] as? String ?? ""
                     let profile_urlString = profile["urlString"] as? String ?? ""
                     let profile_service = profile["service"] as? String ?? ""
-                    
+
                     if
                             profile_username == (foundContactSocialProfile.username)
                             && profile_urlString == (foundContactSocialProfile.urlString)
@@ -306,34 +313,11 @@ public class ContactsPlugin: CAPPlugin {
                 }
             }
         }
-//        let socialProfiles = foundContact?.socialProfiles
-//        for givenContactSocialProfile in call.getArray("socialProfiles", JSObject.self) ?? [] {
-//            var shouldAdd = true
-//            if let profile = givenContactSocialProfile["profile"] as? JSObject {
-//                for socialProfile in socialProfiles ?? [] {
-//                    let foundContactSocialProfile = socialProfile.value
-//                    if profile as? String ?? "" == foundContactSocialProfile.urlString {
-//                        shouldAdd = false
-//                    }
-//                }
-//                if shouldAdd {
-//                    contact.socialProfiles.append(CNLabeledValue(
-//                        label: givenContactSocialProfile["label"] as? String,
-//                       value: CNSocialProfile(
-//                           urlString: profile["urlString"] as? String,
-//                           username: profile["username"] as? String,
-//                           userIdentifier: "", // TODO: what is this?
-//                           service: profile["service"] as? String
-//                       )
-//                    ))
-//                }
-//            }
-//        }
 
         // --- Save
-        
+
         if(isNew) {
-            
+
             do {
                 let saveRequest = CNSaveRequest()
                 saveRequest.add(contact, toContainerWithIdentifier: nil)
@@ -342,9 +326,9 @@ public class ContactsPlugin: CAPPlugin {
             } catch let error as NSError {
                 print(error)
             }
-            
+
         } else {
-            
+
             do {
                 let saveRequest = CNSaveRequest()
                 saveRequest.update(contact)
@@ -353,10 +337,6 @@ public class ContactsPlugin: CAPPlugin {
             } catch let error as NSError {
                 print(error)
             }
-            
         }
-        
-        
     }
-
 }

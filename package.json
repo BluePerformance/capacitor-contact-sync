@@ -1,6 +1,6 @@
 {
-  "name": "@capacitor-community/contacts",
-  "version": "2.0.0",
+  "name": "@blue-performance/capacitor-contact-sync",
+  "version": "3.0.10",
   "description": "Contacts Plugin for Capacitor",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
@@ -11,16 +11,16 @@
     "android/build.gradle",
     "dist/",
     "ios/Plugin/",
-    "CapacitorCommunityContacts.podspec"
+    "BluePerformanceCapacitorContactSync.podspec"
   ],
-  "author": "Jonathan Gerber",
+  "author": "Blue Performance GmbH",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/capacitor-community/contacts.git"
+    "url": "git+https://github.com/BluePerformance/capacitor-contact-sync.git"
   },
   "bugs": {
-    "url": "https://github.com/capacitor-community/contacts/issues"
+    "url": "https://github.com/BluePerformance/capacitor-contact-sync/issues"
   },
   "keywords": [
     "capacitor",
