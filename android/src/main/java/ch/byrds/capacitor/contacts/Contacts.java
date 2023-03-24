@@ -1,7 +1,11 @@
 package ch.byrds.capacitor.contacts;
 
+import static android.provider.ContactsContract.Data.MIMETYPE;
+
 import android.Manifest;
 import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -11,8 +15,12 @@ import android.provider.ContactsContract.CommonDataKinds.Event;
 import android.provider.ContactsContract.CommonDataKinds.Organization;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.CommonDataKinds.Photo;
+import android.provider.ContactsContract.CommonDataKinds.StructuredName;
+import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
+import android.provider.ContactsContract.CommonDataKinds.Website;
 import android.util.Base64;
 import android.util.Log;
+
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -20,19 +28,26 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 @CapacitorPlugin(
-    name = "Contacts",
-    //requestCodes is labeled as legacy in bridge
-    requestCodes = Contacts.REQUEST_CODE,
-    permissions = { @Permission(strings = { Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS }, alias = "contacts") }
+        name = "Contacts",
+        //requestCodes is labeled as legacy in bridge
+        requestCodes = Contacts.REQUEST_CODE,
+        permissions = {@Permission(strings = {Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS}, alias = "contacts")}
 )
 public class Contacts extends Plugin {
 
@@ -89,24 +104,24 @@ public class Contacts extends Plugin {
 
         ContentResolver contentResolver = getContext().getContentResolver();
 
-        String[] projection = new String[] {
-            ContactsContract.Data.MIMETYPE,
-            Organization.TITLE,
-            ContactsContract.Contacts._ID,
-            ContactsContract.Data.CONTACT_ID,
-            ContactsContract.Contacts.DISPLAY_NAME,
-            ContactsContract.Contacts.Photo.PHOTO,
-            ContactsContract.CommonDataKinds.Contactables.DATA,
-            ContactsContract.CommonDataKinds.Contactables.TYPE,
-            ContactsContract.CommonDataKinds.Contactables.LABEL
+        String[] projection = new String[]{
+                MIMETYPE,
+                Organization.TITLE,
+                ContactsContract.Contacts._ID,
+                ContactsContract.Data.CONTACT_ID,
+                ContactsContract.Contacts.DISPLAY_NAME,
+                ContactsContract.Contacts.Photo.PHOTO,
+                ContactsContract.CommonDataKinds.Contactables.DATA,
+                ContactsContract.CommonDataKinds.Contactables.TYPE,
+                ContactsContract.CommonDataKinds.Contactables.LABEL
         };
-        String selection = ContactsContract.Data.MIMETYPE + " in (?, ?, ?, ?, ?)";
-        String[] selectionArgs = new String[] {
-            Email.CONTENT_ITEM_TYPE,
-            Phone.CONTENT_ITEM_TYPE,
-            Event.CONTENT_ITEM_TYPE,
-            Organization.CONTENT_ITEM_TYPE,
-            Photo.CONTENT_ITEM_TYPE
+        String selection = MIMETYPE + " in (?, ?, ?, ?, ?)";
+        String[] selectionArgs = new String[]{
+                Email.CONTENT_ITEM_TYPE,
+                Phone.CONTENT_ITEM_TYPE,
+                Event.CONTENT_ITEM_TYPE,
+                Organization.CONTENT_ITEM_TYPE,
+                Photo.CONTENT_ITEM_TYPE
         };
 
         Cursor contactsCursor = contentResolver.query(ContactsContract.Data.CONTENT_URI, projection, selection, selectionArgs, null);
@@ -141,13 +156,13 @@ public class Contacts extends Plugin {
                 }
 
                 if (jsContact != null) {
-                    String mimeType = contactsCursor.getString(contactsCursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
+                    String mimeType = contactsCursor.getString(contactsCursor.getColumnIndex(MIMETYPE));
                     String data = contactsCursor.getString(
-                        contactsCursor.getColumnIndex(ContactsContract.CommonDataKinds.Contactables.DATA)
+                            contactsCursor.getColumnIndex(ContactsContract.CommonDataKinds.Contactables.DATA)
                     );
                     int type = contactsCursor.getInt(contactsCursor.getColumnIndex(ContactsContract.CommonDataKinds.Contactables.TYPE));
                     String label = contactsCursor.getString(
-                        contactsCursor.getColumnIndex(ContactsContract.CommonDataKinds.Contactables.LABEL)
+                            contactsCursor.getColumnIndex(ContactsContract.CommonDataKinds.Contactables.LABEL)
                     );
 
                     // email
@@ -180,7 +195,7 @@ public class Contacts extends Plugin {
                         // birthday
                         case Event.CONTENT_ITEM_TYPE:
                             int eventType = contactsCursor.getInt(
-                                contactsCursor.getColumnIndex(ContactsContract.CommonDataKinds.Contactables.TYPE)
+                                    contactsCursor.getColumnIndex(ContactsContract.CommonDataKinds.Contactables.TYPE)
                             );
                             if (eventType == Event.TYPE_BIRTHDAY) {
                                 jsContact.put(BIRTHDAY, data);
@@ -197,7 +212,7 @@ public class Contacts extends Plugin {
                         // photo
                         case Photo.CONTENT_ITEM_TYPE:
                             byte[] thumbnailPhoto = contactsCursor.getBlob(
-                                contactsCursor.getColumnIndex(ContactsContract.Contacts.Photo.PHOTO)
+                                    contactsCursor.getColumnIndex(ContactsContract.Contacts.Photo.PHOTO)
                             );
                             if (thumbnailPhoto != null) {
                                 String encodedThumbnailPhoto = Base64.encodeToString(thumbnailPhoto, Base64.NO_WRAP);
@@ -243,14 +258,14 @@ public class Contacts extends Plugin {
     @PluginMethod
     public void getContactGroups(PluginCall call) {
         Cursor dataCursor = getContext()
-            .getContentResolver()
-            .query(
-                ContactsContract.Data.CONTENT_URI,
-                new String[] { ContactsContract.Data.CONTACT_ID, ContactsContract.Data.DATA1 },
-                ContactsContract.Data.MIMETYPE + "=?",
-                new String[] { ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE },
-                null
-            );
+                .getContentResolver()
+                .query(
+                        ContactsContract.Data.CONTENT_URI,
+                        new String[]{ContactsContract.Data.CONTACT_ID, ContactsContract.Data.DATA1},
+                        MIMETYPE + "=?",
+                        new String[]{ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE},
+                        null
+                );
 
         Map<String, Set<String>> contact2GroupMap = new HashMap<>();
         while (dataCursor.moveToNext()) {
@@ -290,106 +305,132 @@ public class Contacts extends Plugin {
 
     @PluginMethod
     public void saveContact(PluginCall call) throws JSONException {
-        Intent intent = new Intent(ContactsContract.Intents.Insert.ACTION);
-        intent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
 
-        // TODO: add missing: birthday, social profiles, nickname, name prefix, url addresses
+        // Use "Data" interface to insert data into the ContactsContract.Data table
+        ArrayList<ContentValues> data = new ArrayList<ContentValues>();
 
-        // Name
+        // name
+        ContentValues name = new ContentValues();
+        name.put(MIMETYPE, StructuredName.CONTENT_ITEM_TYPE);
+        name.put(StructuredName.PREFIX, call.getString("namePrefix", ""));
+        name.put(StructuredName.GIVEN_NAME, call.getString("givenName", ""));
+        name.put(StructuredName.MIDDLE_NAME, call.getString("middleName", ""));
+        name.put(StructuredName.FAMILY_NAME, call.getString("familyName", ""));
+        name.put(StructuredName.SUFFIX, call.getString("nameSuffix", ""));
+        data.add(name);
 
-        String givenName = call.getString("givenName", "");
-        String middleName = call.getString("middleName", "");
-        String familyName = call.getString("familyName", "");
+        ContentValues organisation = new ContentValues();
+        organisation.put(MIMETYPE, Organization.CONTENT_ITEM_TYPE);
+        organisation.put(Organization.COMPANY, call.getString("organizationName", ""));
+        organisation.put(Organization.TITLE, call.getString("jobTitle", ""));
+        data.add(organisation);
 
-        String name = givenName;
-        if (middleName != null) name += " " + middleName;
-        name += " " + familyName;
-        intent.putExtra(ContactsContract.Intents.Insert.NAME, name);
-
-        // Other
-
-        intent.putExtra(ContactsContract.Intents.Insert.NOTES, call.getString("note", ""));
-
-        // Email addresses
-
+        // email addresses
         JSArray emailAddressesArray = call.getArray("emailAddresses", new JSArray());
         List<Object> emailAddresses = emailAddressesArray.toList();
-
-        // TODO: allow more than these three email types
-        if (emailAddresses.size() > 0) {
-            JSObject primaryEmail = JSObject.fromJSONObject((JSONObject) emailAddresses.get(0));
-            intent.putExtra(ContactsContract.Intents.Insert.EMAIL, primaryEmail.getString("address", ""));
-            intent.putExtra(ContactsContract.Intents.Insert.EMAIL_TYPE, primaryEmail.getString("label", ""));
-            intent.putExtra(ContactsContract.Intents.Insert.EMAIL_ISPRIMARY, true);
-
-            if (emailAddresses.size() > 1) {
-                JSObject secondaryEmail = JSObject.fromJSONObject((JSONObject) emailAddresses.get(1));
-                intent.putExtra(ContactsContract.Intents.Insert.SECONDARY_EMAIL, secondaryEmail.getString("address", ""));
-                intent.putExtra(ContactsContract.Intents.Insert.SECONDARY_EMAIL_TYPE, secondaryEmail.getString("label", ""));
-
-                if (emailAddresses.size() > 2) {
-                    JSObject tertiaryEmail = JSObject.fromJSONObject((JSONObject) emailAddresses.get(2));
-                    intent.putExtra(ContactsContract.Intents.Insert.TERTIARY_EMAIL, tertiaryEmail.getString("address", ""));
-                    intent.putExtra(ContactsContract.Intents.Insert.TERTIARY_EMAIL_TYPE, tertiaryEmail.getString("label", ""));
-                }
-            }
+        for (int i = 0; i < emailAddresses.size(); i++) {
+            JSObject emailAddress = JSObject.fromJSONObject((JSONObject) emailAddresses.get(i));
+            ContentValues email = new ContentValues();
+            email.put(MIMETYPE, Email.CONTENT_ITEM_TYPE);
+            email.put(Email.TYPE, Email.TYPE_CUSTOM);
+            email.put(Email.LABEL, emailAddress.getString("label", ""));
+            email.put(Email.ADDRESS, emailAddress.getString("address", ""));
+            data.add(email);
         }
 
-        // Phone numbers
-
+        // phone numbers
         JSArray phoneNumbersArray = call.getArray("phoneNumbers", new JSArray());
         List<Object> phoneNumbers = phoneNumbersArray.toList();
+        for (int i = 0; i < phoneNumbers.size(); i++) {
+            JSObject phoneNumber = JSObject.fromJSONObject((JSONObject) phoneNumbers.get(i));
+            ContentValues phone = new ContentValues();
+            phone.put(MIMETYPE, Phone.CONTENT_ITEM_TYPE);
+            phone.put(Phone.TYPE, Phone.TYPE_CUSTOM);
+            phone.put(Phone.LABEL, phoneNumber.getString("label", ""));
+            phone.put(Phone.NUMBER, phoneNumber.getString("number", ""));
+            data.add(phone);
+        }
 
-        // TODO: allow more than these three phone number types
-        if (phoneNumbers.size() > 0) {
-            JSObject primaryNumber = JSObject.fromJSONObject((JSONObject) phoneNumbers.get(0));
-            intent.putExtra(ContactsContract.Intents.Insert.PHONE, primaryNumber.getString("number", ""));
-            intent.putExtra(ContactsContract.Intents.Insert.PHONE_TYPE, primaryNumber.getString("label", ""));
-            intent.putExtra(ContactsContract.Intents.Insert.PHONE_ISPRIMARY, true);
+        // url addresses
+        JSArray urlAddressesArray = call.getArray("urlAddresses", new JSArray());
+        List<Object> urlAddresses = urlAddressesArray.toList();
+        for (int i = 0; i < urlAddresses.size(); i++) {
+            JSObject urlAddress = JSObject.fromJSONObject((JSONObject) urlAddresses.get(i));
+            ContentValues url = new ContentValues();
+            url.put(MIMETYPE, Website.CONTENT_ITEM_TYPE);
+            url.put(Website.TYPE, Website.TYPE_CUSTOM);
+            url.put(Website.LABEL, urlAddress.getString("label", ""));
+            url.put(Website.URL, urlAddress.getString("url", ""));
+            data.add(url);
+        }
 
-            if (phoneNumbers.size() > 1) {
-                JSObject secondaryNumber = JSObject.fromJSONObject((JSONObject) phoneNumbers.get(1));
-                intent.putExtra(ContactsContract.Intents.Insert.SECONDARY_PHONE, secondaryNumber.getString("number", ""));
-                intent.putExtra(ContactsContract.Intents.Insert.SECONDARY_PHONE_TYPE, secondaryNumber.getString("label", ""));
+        // postal addresses
+        JSArray postalAddressesArray = call.getArray("postalAddresses", new JSArray());
+        List<Object> postalAddresses = postalAddressesArray.toList();
+        for (int i = 0; i < postalAddresses.size(); i++) {
+            JSObject postalAddress = JSObject.fromJSONObject((JSONObject) postalAddresses.get(i));
+            ContentValues postal = new ContentValues();
+            postal.put(MIMETYPE, StructuredPostal.CONTENT_ITEM_TYPE);
+            postal.put(StructuredPostal.TYPE, StructuredPostal.TYPE_CUSTOM);
+            postal.put(StructuredPostal.LABEL, postalAddress.getString("label", ""));
+            postal.put(StructuredPostal.STREET, postalAddress.getString("street", ""));
+            postal.put(StructuredPostal.POSTCODE, postalAddress.getString("postalCode", ""));
+            postal.put(StructuredPostal.CITY, postalAddress.getString("city", ""));
+            postal.put(StructuredPostal.REGION, postalAddress.getString("state", ""));
+            postal.put(StructuredPostal.COUNTRY, postalAddress.getString("country", ""));
+            data.add(postal);
+        }
 
-                if (phoneNumbers.size() > 2) {
-                    JSObject tertiaryNumber = JSObject.fromJSONObject((JSONObject) phoneNumbers.get(2));
-                    intent.putExtra(ContactsContract.Intents.Insert.TERTIARY_PHONE, tertiaryNumber.getString("number", ""));
-                    intent.putExtra(ContactsContract.Intents.Insert.TERTIARY_PHONE_TYPE, tertiaryNumber.getString("label", ""));
-                }
+        // social profiles
+        JSArray socialProfilesArray = call.getArray("socialProfiles", new JSArray());
+        List<Object> socialProfiles = socialProfilesArray.toList();
+        for (int i = 0; i < socialProfiles.size(); i++) {
+            JSObject socialProfile = JSObject.fromJSONObject((JSONObject) socialProfiles.get(i));
+            ContentValues url = new ContentValues();
+            url.put(MIMETYPE, Website.CONTENT_ITEM_TYPE);
+            url.put(Website.TYPE, Website.TYPE_CUSTOM);
+            JSObject profile = socialProfile.getJSObject("profile");
+            if (profile != null) {
+                url.put(Website.LABEL, profile.getString("service", ""));
+                url.put(Website.URL, profile.getString("urlString", ""));
+                data.add(url);
             }
         }
 
-        // Company
+        // image
+        String image = call.getString("image", "");
+        if (image != null && !image.isEmpty()) {
+            ContentValues photo = new ContentValues();
+            photo.put(MIMETYPE, Photo.CONTENT_ITEM_TYPE);
 
-        intent.putExtra(ContactsContract.Intents.Insert.JOB_TITLE, call.getString("jobTitle", ""));
-        intent.putExtra(ContactsContract.Intents.Insert.COMPANY, call.getString("organizationName", ""));
-        // TODO: why can department name not be added?
-        //intent.putExtra(ContactsContract.Intents.Insert.DEPARTMENT, call.getString("departmentName", ""));
+            photo.put(Photo.PHOTO, this.getBytesFromUrl(image));
 
-        // Addresses
-
-        JSArray addressesArray = call.getArray("postalAddresses", new JSArray());
-        List<Object> addresses = addressesArray.toList();
-
-        // TODO: allow more than one address
-        if (addresses.size() > 0) {
-            JSObject address = JSObject.fromJSONObject((JSONObject) addresses.get(0));
-            JSObject postalObject = address.getJSObject("address", new JSObject());
-            String postal =
-                postalObject.getString("street", "") +
-                ", " +
-                postalObject.getString("postalCode", "") +
-                " " +
-                postalObject.getString("city", "") +
-                ", " +
-                postalObject.getString("country", "");
-            intent.putExtra(ContactsContract.Intents.Insert.POSTAL, postal);
-            intent.putExtra(ContactsContract.Intents.Insert.POSTAL_TYPE, address.getString("label", ""));
-            intent.putExtra(ContactsContract.Intents.Insert.POSTAL_ISPRIMARY, true);
+            data.add(photo);
         }
 
+
+
+
+        String identifier = call.getString("identifier", "");
+
+        Intent intent;
+
+        if(identifier.isEmpty()) {
+            intent = new Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI);
+        } else {
+
+            long idContact = Long.parseLong(identifier);
+
+            // update contact
+            intent = new Intent(Intent.ACTION_EDIT);
+            Uri contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, idContact);
+            intent.setData(contactUri);
+        }
+
+        intent.putParcelableArrayListExtra(ContactsContract.Intents.Insert.DATA, data);
+
         // --- Save
+
 
         getContext().startActivity(intent);
 
@@ -458,5 +499,26 @@ public class Contacts extends Plugin {
             default:
                 return defaultLabel;
         }
+    }
+
+    private byte[] getBytesFromUrl(String url) {
+
+        try {
+            URL imageUrl = new URL(url);
+            URLConnection ucon = imageUrl.openConnection();
+            InputStream is = ucon.getInputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int read = 0;
+            while ((read = is.read(buffer, 0, buffer.length)) != -1) {
+                baos.write(buffer, 0, read);
+            }
+            baos.flush();
+            return baos.toByteArray();
+//      return "data:image/png;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+        } catch (Exception e) {
+            Log.d("Error", e.toString());
+        }
+        return null;
     }
 }
