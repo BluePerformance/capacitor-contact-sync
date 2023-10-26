@@ -324,6 +324,7 @@ public class ContactsPlugin: CAPPlugin {
                 try CNContactStore().execute(saveRequest)
                 call.resolve(["result": contact])
             } catch let error as NSError {
+                call.reject("Error during save contact (create)", error as? String)
                 print(error)
             }
 
@@ -335,6 +336,7 @@ public class ContactsPlugin: CAPPlugin {
                 try CNContactStore().execute(saveRequest)
                 call.resolve(["result": contact])
             } catch let error as NSError {
+                call.reject("Error during save contact (update)", error as? String)
                 print(error)
             }
         }
