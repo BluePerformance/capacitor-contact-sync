@@ -315,29 +315,40 @@ public class ContactsPlugin: CAPPlugin {
         }
 
         // --- Save
+        print("save contact")
 
         if(isNew) {
+
+            print("create contact")
 
             do {
                 let saveRequest = CNSaveRequest()
                 saveRequest.add(contact, toContainerWithIdentifier: nil)
                 try CNContactStore().execute(saveRequest)
-                call.resolve(["result": contact])
+                print("created contact")
+                call.resolve(["result": "created"])
+                print("call resolved")
             } catch let error as NSError {
-                call.reject("Error during save contact (create)", error as? String)
                 print(error)
+                call.reject("Error during save contact (create)", error as? String)
+                print("call rejected")
             }
 
         } else {
+
+            print("update contact")
 
             do {
                 let saveRequest = CNSaveRequest()
                 saveRequest.update(contact)
                 try CNContactStore().execute(saveRequest)
-                call.resolve(["result": contact])
+                print("updated contact")
+                call.resolve(["result": "updated"])
+                print("call resolved")
             } catch let error as NSError {
-                call.reject("Error during save contact (update)", error as? String)
                 print(error)
+                call.reject("Error during save contact (update)", error as? String)
+                print("call rejected")
             }
         }
     }
