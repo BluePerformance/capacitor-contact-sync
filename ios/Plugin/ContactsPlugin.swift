@@ -90,7 +90,7 @@ public class ContactsPlugin: CAPPlugin {
                         "contacts": contactsArray
                     ])
                 } catch let error as NSError {
-                    call.reject("Generic Error", error as? String)
+                    call.reject(error as? String)
                 }
             } else {
                 call.reject("User denied access to contacts")
@@ -123,7 +123,7 @@ public class ContactsPlugin: CAPPlugin {
                 "contacts": contacts
             ])
         } catch let error as NSError {
-            call.reject("Error during find contacts", error as? String)
+            call.reject(error as? String)
         }
     }
 
@@ -330,7 +330,7 @@ public class ContactsPlugin: CAPPlugin {
                 print("call resolved")
             } catch let error as NSError {
                 print(error)
-                call.reject("Error during save contact (create)", error as? String)
+                call.reject(error as? String)
                 print("call rejected")
             }
 
@@ -347,7 +347,7 @@ public class ContactsPlugin: CAPPlugin {
                 print("call resolved")
             } catch let error as NSError {
                 print(error)
-                call.reject("Error during save contact (update)", error as? String)
+                call.reject(error as? String)
                 print("call rejected")
             }
         }
