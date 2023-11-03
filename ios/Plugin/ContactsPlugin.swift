@@ -90,10 +90,7 @@ public class ContactsPlugin: CAPPlugin {
                         "contacts": contactsArray
                     ])
                 } catch let error as NSError {
-                    var errorMessage = "Error: ";
-                    errorMessage.append(error as String);
-
-                    call.reject(errorMessage)
+                    call.reject(error.localizedDescription)
                 }
             } else {
                 call.reject("User denied access to contacts")
@@ -126,10 +123,7 @@ public class ContactsPlugin: CAPPlugin {
                 "contacts": contacts
             ])
         } catch let error as NSError {
-            var errorMessage = "Error: ";
-            errorMessage.append(error as String);
-
-            call.reject(errorMessage)
+            call.reject(error.localizedDescription)
         }
     }
 
@@ -336,10 +330,7 @@ public class ContactsPlugin: CAPPlugin {
                 print("call resolved")
             } catch let error as NSError {
                 print(error)
-                var errorMessage = "Error: ";
-                errorMessage.append(error as String);
-
-                call.reject(errorMessage)
+                call.reject(error.localizedDescription)
                 print("call rejected")
             }
 
@@ -356,10 +347,7 @@ public class ContactsPlugin: CAPPlugin {
                 print("call resolved")
             } catch let error as NSError {
                 print(error)
-                var errorMessage = "Error: ";
-                errorMessage.append(error as String);
-
-                call.reject(errorMessage)
+                call.reject(error.localizedDescription)
                 print("call rejected")
             }
         }
