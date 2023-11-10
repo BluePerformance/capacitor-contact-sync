@@ -90,7 +90,7 @@ public class ContactsPlugin: CAPPlugin {
                         "contacts": contactsArray
                     ])
                 } catch let error as NSError {
-                    call.reject(error.localizedDescription)
+                    call.reject(error.localizedDescription, nil, error)
                 }
             } else {
                 call.reject("User denied access to contacts")
@@ -123,7 +123,7 @@ public class ContactsPlugin: CAPPlugin {
                 "contacts": contacts
             ])
         } catch let error as NSError {
-            call.reject(error.localizedDescription)
+            call.reject(error.localizedDescription, nil, error)
         }
     }
 
@@ -167,11 +167,32 @@ public class ContactsPlugin: CAPPlugin {
         contact.nameSuffix = call.getString("nameSuffix", "")
 
         // Image
-
         let image = call.getString("image", "")
-        if(image != "") {
+        if(image && image != "") {
             let url = URL(string: image)
             contact.imageData = try? Data(contentsOf: url!)
+        }
+
+        // Image
+        let image = call.getString("image", "")
+        if !image.isEmpty {
+            if let imageUrl = URL(string: image) {
+                do {
+                    // Attempt to load image data from the URL
+                    let imageData = try Data(contentsOf: imageUrl)
+                    contact.imageData = imageData
+                } catch {
+                    // Handle the error if the image data loading fails
+                    print("Error loading image data: \(error)")
+                    // You might want to handle the error in a way that makes sense for your app
+                    call.reject("Error loading image data: \(error)")
+                }
+            } else {
+                // Handle the case where the image URL is invalid
+                print("Invalid image URL")
+                // You might want to handle this case in a way that makes sense for your app
+                call.reject("Invalid image URL")
+            }
         }
 
         // Work information
@@ -190,7 +211,7 @@ public class ContactsPlugin: CAPPlugin {
                         shouldAdd = false
                     }
                 }
-                if shouldAdd {
+                if shouldAdd && !address.isEmpty {
                     contact.emailAddresses.append(CNLabeledValue(
                         label: givenContactAddress["label"] as? String,
                         value: address
@@ -210,7 +231,7 @@ public class ContactsPlugin: CAPPlugin {
                         shouldAdd = false
                     }
                 }
-                if shouldAdd {
+                if shouldAdd && !url.isEmpty {
                     contact.urlAddresses.append(CNLabeledValue(
                         label: givenContactURLAddress["label"] as? String,
                         value: url
@@ -264,7 +285,7 @@ public class ContactsPlugin: CAPPlugin {
                         shouldAdd = false
                     }
                 }
-                if shouldAdd {
+                if shouldAdd && !number.isEmpty {
                     contact.phoneNumbers.append(CNLabeledValue(
                         label: givenContactPhoneNumber["label"] as? String,
                         value: CNPhoneNumber(stringValue: number as String)
@@ -300,7 +321,7 @@ public class ContactsPlugin: CAPPlugin {
                     }
                 }
                 print("adding profile")
-                if shouldAdd {
+                if shouldAdd && (!profile["urlString"].isEmpty || !profile["username"].isEmpty) {
                     contact.socialProfiles.append(CNLabeledValue(
                         label: givenContactSocialProfile["label"] as? String,
                         value:  CNSocialProfile(
@@ -330,7 +351,7 @@ public class ContactsPlugin: CAPPlugin {
                 print("call resolved")
             } catch let error as NSError {
                 print(error)
-                call.reject(error.localizedDescription)
+                call.reject(error.localizedDescription, nil, error)
                 print("call rejected")
             }
 
@@ -347,7 +368,7 @@ public class ContactsPlugin: CAPPlugin {
                 print("call resolved")
             } catch let error as NSError {
                 print(error)
-                call.reject(error.localizedDescription)
+                call.reject(error.localizedDescription, nil, error)
                 print("call rejected")
             }
         }
