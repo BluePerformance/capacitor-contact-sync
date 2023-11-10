@@ -168,13 +168,6 @@ public class ContactsPlugin: CAPPlugin {
 
         // Image
         let image = call.getString("image", "")
-        if(image && image != "") {
-            let url = URL(string: image)
-            contact.imageData = try? Data(contentsOf: url!)
-        }
-
-        // Image
-        let image = call.getString("image", "")
         if !image.isEmpty {
             if let imageUrl = URL(string: image) {
                 do {
