@@ -189,22 +189,15 @@ public class ContactsPlugin: CAPPlugin {
         }
 
         // Work information
-
         contact.jobTitle = call.getString("jobTitle", "")
         contact.organizationName = call.getString("organizationName", "")
 
         // Email Addresses
-        let emails = foundContact?.emailAddresses
+        let emailAddresses = foundContact?.emailAddresses
         for givenContactAddress in call.getArray("emailAddresses", JSObject.self) ?? [] {
-            var shouldAdd = true
             if let address = givenContactAddress["address"] as? NSString {
-                for email in emails ?? [] {
-                    let foundContactAddress = email.value
-                    if address == foundContactAddress {
-                        shouldAdd = false
-                    }
-                }
-                if shouldAdd && !address.isEmpty {
+                let isDuplicate = emailAddresses?.contains { $0.value as NSString == address } ?? false
+                if !isDuplicate && address != "" {
                     contact.emailAddresses.append(CNLabeledValue(
                         label: givenContactAddress["label"] as? String,
                         value: address
@@ -216,15 +209,9 @@ public class ContactsPlugin: CAPPlugin {
         // URL Addresses
         let urlAddresses = foundContact?.urlAddresses
         for givenContactURLAddress in call.getArray("urlAddresses", JSObject.self) ?? [] {
-            var shouldAdd = true
             if let url = givenContactURLAddress["url"] as? NSString {
-                for urlAddress in urlAddresses ?? [] {
-                    let foundContactURLAddress = urlAddress.value
-                    if url == foundContactURLAddress {
-                        shouldAdd = false
-                    }
-                }
-                if shouldAdd && !url.isEmpty {
+                let isDuplicate = urlAddresses?.contains { $0.value as NSString == url } ?? false
+                if !isDuplicate && url != "" {
                     contact.urlAddresses.append(CNLabeledValue(
                         label: givenContactURLAddress["label"] as? String,
                         value: url
@@ -236,28 +223,17 @@ public class ContactsPlugin: CAPPlugin {
         // POSTAL Addresses
         let postalAddresses = foundContact?.postalAddresses
         for givenContactPostalAddress in call.getArray("postalAddresses", JSObject.self) ?? [] {
-            var shouldAdd = true
             if let address = givenContactPostalAddress["address"] as? JSObject {
-                for postalAddress in postalAddresses ?? [] {
-                    let foundContactPostalAddress = postalAddress.value
-                    let address_street = address["street"] as? String ?? ""
-                    let address_state = address["state"] as? String ?? ""
-                    let address_city = address["city"] as? String ?? ""
-                    let address_country = address["country"] as? String ?? ""
-                    let address_postalCode = address["postalCode"] as? String ?? ""
+                let isDuplicate = postalAddresses?.contains { existingAddress in
+                    let existingAddressValue = existingAddress.value as CNPostalAddress
+                    return address["street"] as? String == existingAddressValue.street &&
+                           address["state"] as? String == existingAddressValue.state &&
+                           address["city"] as? String == existingAddressValue.city &&
+                           address["country"] as? String == existingAddressValue.country &&
+                           address["postalCode"] as? String == existingAddressValue.postalCode
+                } ?? false
 
-                    if
-                        address_street == (foundContactPostalAddress.street)
-                            && address_state == (foundContactPostalAddress.state)
-                            && address_city == (foundContactPostalAddress.city)
-                            && address_country == (foundContactPostalAddress.country)
-                            && address_postalCode == (foundContactPostalAddress.postalCode)
-                    {
-                        shouldAdd = false
-                    }
-                }
-                print("adding address")
-                if shouldAdd {
+                if !isDuplicate {
                     contact.postalAddresses.append(CNLabeledValue(
                         label: givenContactPostalAddress["label"] as? String,
                         value: Contacts.getPostalAddressFromAddress(jsAddress: address)
@@ -270,15 +246,9 @@ public class ContactsPlugin: CAPPlugin {
         // Phone Numbers
         let phoneNumbers = foundContact?.phoneNumbers
         for givenContactPhoneNumber in call.getArray("phoneNumbers", JSObject.self) ?? [] {
-            var shouldAdd = true
             if let number = givenContactPhoneNumber["number"] as? NSString {
-                for phoneNumber in phoneNumbers ?? [] {
-                    let foundContactPhoneNumber = phoneNumber.value as CNPhoneNumber
-                    if number == foundContactPhoneNumber.stringValue as NSString {
-                        shouldAdd = false
-                    }
-                }
-                if shouldAdd && !number.isEmpty {
+                let isDuplicate = phoneNumbers?.contains { $0.value.stringValue as NSString == number } ?? false
+                if !isDuplicate {
                     contact.phoneNumbers.append(CNLabeledValue(
                         label: givenContactPhoneNumber["label"] as? String,
                         value: CNPhoneNumber(stringValue: number as String)
@@ -286,6 +256,7 @@ public class ContactsPlugin: CAPPlugin {
                 }
             }
         }
+
         // NOTES
         // contact.note = call.getString("note", "")
 
@@ -297,32 +268,23 @@ public class ContactsPlugin: CAPPlugin {
         // SOCIAL PROFILES
         let socialProfiles = foundContact?.socialProfiles
         for givenContactSocialProfile in call.getArray("socialProfiles", JSObject.self) ?? [] {
-            var shouldAdd = true
             if let profile = givenContactSocialProfile["profile"] as? JSObject {
-                for socialProfile in socialProfiles ?? [] {
-                    let foundContactSocialProfile = socialProfile.value
-                    let profile_username = profile["username"] as? String ?? ""
-                    let profile_urlString = profile["urlString"] as? String ?? ""
-                    let profile_service = profile["service"] as? String ?? ""
+                let isDuplicate = socialProfiles?.contains { existingProfile in
+                    let existingProfileValue = existingProfile.value as CNSocialProfile
+                    return profile["username"] as? String == existingProfileValue.username &&
+                           profile["urlString"] as? String == existingProfileValue.urlString &&
+                           profile["service"] as? String == existingProfileValue.service
+                } ?? false
 
-                    if
-                            profile_username == (foundContactSocialProfile.username)
-                            && profile_urlString == (foundContactSocialProfile.urlString)
-                            && profile_service == (foundContactSocialProfile.service)
-                    {
-                        shouldAdd = false
-                    }
-                }
-                print("adding profile")
-                if shouldAdd && (!profile["urlString"].isEmpty || !profile["username"].isEmpty) {
+                if !isDuplicate {
                     contact.socialProfiles.append(CNLabeledValue(
                         label: givenContactSocialProfile["label"] as? String,
-                        value:  CNSocialProfile(
-                                   urlString: profile["urlString"] as? String,
-                                   username: profile["username"] as? String,
-                                   userIdentifier: "", // TODO: what is this?
-                                   service: profile["service"] as? String
-                               )
+                        value: CNSocialProfile(
+                            urlString: profile["urlString"] as? String,
+                            username: profile["username"] as? String,
+                            userIdentifier: "",
+                            service: profile["service"] as? String
+                        )
                     ))
                 }
             }
