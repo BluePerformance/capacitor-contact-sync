@@ -156,41 +156,127 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
+        let saveMechanism = call.getString("saveMechanism", "")
+
         contact.contactType = CNContactType(rawValue: call.getInt("contactType", 0))!
 
         // Name information
+        let namePrefix = call.getString("namePrefix", "")
+        if namePrefix != 'namePrefix' {
+            contact.namePrefix = namePrefix
+        }
+        let givenName = call.getString("givenName", "")
+        if givenName != 'givenName' {
+            contact.givenName = givenName
+        }
+        let middleName = call.getString("middleName", "")
+        if middleName != 'middleName' {
+            contact.middleName = middleName
+        }
+        let familyName = call.getString("familyName", "")
+        if familyName != 'familyName' {
+            contact.familyName = familyName
+        }
+        let nameSuffix = call.getString("nameSuffix", "")
+        if nameSuffix != 'nameSuffix' {
+            contact.nameSuffix = nameSuffix
+        }
 
-        contact.namePrefix = call.getString("namePrefix", "")
-        contact.givenName = call.getString("givenName", "")
-        contact.middleName = call.getString("middleName", "")
-        contact.familyName = call.getString("familyName", "")
-        contact.nameSuffix = call.getString("nameSuffix", "")
+        if saveMechanism == 'name' {
 
-        // Image
-        let image = call.getString("image", "")
-        if !image.isEmpty {
-            if let imageUrl = URL(string: image) {
+            // --- Save
+            print("save contact")
+
+            if(isNew) {
+
+                print("create contact")
+
                 do {
-                    // Attempt to load image data from the URL
-                    let imageData = try Data(contentsOf: imageUrl)
-                    contact.imageData = imageData
-                } catch {
-                    // Handle the error if the image data loading fails
-                    print("Error loading image data: \(error)")
-                    // You might want to handle the error in a way that makes sense for your app
-                    call.reject("Error loading image data: \(error)")
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.add(contact, toContainerWithIdentifier: nil)
+                    try CNContactStore().execute(saveRequest)
+                    print("created contact")
+                    call.resolve(["result": "created"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
                 }
+
             } else {
-                // Handle the case where the image URL is invalid
-                print("Invalid image URL")
-                // You might want to handle this case in a way that makes sense for your app
-                call.reject("Invalid image URL")
+
+                print("update contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.update(contact)
+                    try CNContactStore().execute(saveRequest)
+                    print("updated contact")
+                    call.resolve(["result": "updated"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
             }
+
+            return
         }
 
         // Work information
-        contact.jobTitle = call.getString("jobTitle", "")
-        contact.organizationName = call.getString("organizationName", "")
+        let jobTitle = call.getString("jobTitle", "")
+        if jobTitle != "" {
+            contact.jobTitle = jobTitle
+        }
+        let organizationName = call.getString("organizationName", "")
+        if organizationName != "" {
+            contact.organizationName = organizationName
+        }
+
+        if saveMechanism == 'name-company' {
+
+            // --- Save
+            print("save contact")
+
+            if(isNew) {
+
+                print("create contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.add(contact, toContainerWithIdentifier: nil)
+                    try CNContactStore().execute(saveRequest)
+                    print("created contact")
+                    call.resolve(["result": "created"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
+
+            } else {
+
+                print("update contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.update(contact)
+                    try CNContactStore().execute(saveRequest)
+                    print("updated contact")
+                    call.resolve(["result": "updated"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
+            }
+
+            return
+        }
 
         // Email Addresses
         let emailAddresses = foundContact?.emailAddresses
@@ -201,6 +287,20 @@ public class ContactsPlugin: CAPPlugin {
                     contact.emailAddresses.append(CNLabeledValue(
                         label: givenContactAddress["label"] as? String,
                         value: address
+                    ))
+                }
+            }
+        }
+
+        // Phone Numbers
+        let phoneNumbers = foundContact?.phoneNumbers
+        for givenContactPhoneNumber in call.getArray("phoneNumbers", JSObject.self) ?? [] {
+            if let number = givenContactPhoneNumber["number"] as? NSString {
+                let isDuplicate = phoneNumbers?.contains { $0.value.stringValue as NSString == number } ?? false
+                if !isDuplicate {
+                    contact.phoneNumbers.append(CNLabeledValue(
+                        label: givenContactPhoneNumber["label"] as? String,
+                        value: CNPhoneNumber(stringValue: number as String)
                     ))
                 }
             }
@@ -218,6 +318,49 @@ public class ContactsPlugin: CAPPlugin {
                     ))
                 }
             }
+        }
+
+        if saveMechanism == 'name-company-contact' {
+
+            // --- Save
+            print("save contact")
+
+            if(isNew) {
+
+                print("create contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.add(contact, toContainerWithIdentifier: nil)
+                    try CNContactStore().execute(saveRequest)
+                    print("created contact")
+                    call.resolve(["result": "created"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
+
+            } else {
+
+                print("update contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.update(contact)
+                    try CNContactStore().execute(saveRequest)
+                    print("updated contact")
+                    call.resolve(["result": "updated"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
+            }
+
+            return
         }
 
         // POSTAL Addresses
@@ -242,19 +385,47 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
-        // Other
-        // Phone Numbers
-        let phoneNumbers = foundContact?.phoneNumbers
-        for givenContactPhoneNumber in call.getArray("phoneNumbers", JSObject.self) ?? [] {
-            if let number = givenContactPhoneNumber["number"] as? NSString {
-                let isDuplicate = phoneNumbers?.contains { $0.value.stringValue as NSString == number } ?? false
-                if !isDuplicate {
-                    contact.phoneNumbers.append(CNLabeledValue(
-                        label: givenContactPhoneNumber["label"] as? String,
-                        value: CNPhoneNumber(stringValue: number as String)
-                    ))
+        if saveMechanism == 'name-company-contact-address' {
+
+            // --- Save
+            print("save contact")
+
+            if(isNew) {
+
+                print("create contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.add(contact, toContainerWithIdentifier: nil)
+                    try CNContactStore().execute(saveRequest)
+                    print("created contact")
+                    call.resolve(["result": "created"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
+
+            } else {
+
+                print("update contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.update(contact)
+                    try CNContactStore().execute(saveRequest)
+                    print("updated contact")
+                    call.resolve(["result": "updated"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
                 }
             }
+
+            return
         }
 
         // NOTES
@@ -287,6 +458,71 @@ public class ContactsPlugin: CAPPlugin {
                         )
                     ))
                 }
+            }
+        }
+
+        if saveMechanism == 'name-company-contact-address-social' {
+
+            // --- Save
+            print("save contact")
+
+            if(isNew) {
+
+                print("create contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.add(contact, toContainerWithIdentifier: nil)
+                    try CNContactStore().execute(saveRequest)
+                    print("created contact")
+                    call.resolve(["result": "created"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
+
+            } else {
+
+                print("update contact")
+
+                do {
+                    let saveRequest = CNSaveRequest()
+                    saveRequest.update(contact)
+                    try CNContactStore().execute(saveRequest)
+                    print("updated contact")
+                    call.resolve(["result": "updated"])
+                    print("call resolved")
+                } catch let error as NSError {
+                    print(error)
+                    call.reject(error.localizedDescription, nil, error)
+                    print("call rejected")
+                }
+            }
+
+            return
+        }
+
+        // Image
+        let image = call.getString("image", "")
+        if image != "" {
+            if let imageUrl = URL(string: image) {
+                do {
+                    // Attempt to load image data from the URL
+                    let imageData = try Data(contentsOf: imageUrl)
+                    contact.imageData = imageData
+                } catch {
+                    // Handle the error if the image data loading fails
+                    print("Error loading image data: \(error)")
+                    // You might want to handle the error in a way that makes sense for your app
+                    call.reject("Error loading image data: \(error)")
+                }
+            } else {
+                // Handle the case where the image URL is invalid
+                print("Invalid image URL")
+                // You might want to handle this case in a way that makes sense for your app
+                call.reject("Invalid image URL")
             }
         }
 
