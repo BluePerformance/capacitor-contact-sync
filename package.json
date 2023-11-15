@@ -1,6 +1,6 @@
 {
   "name": "@blue-performance/capacitor-contact-sync",
-  "version": "3.0.22",
+  "version": "3.0.23",
   "description": "Contacts Plugin for Capacitor",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",

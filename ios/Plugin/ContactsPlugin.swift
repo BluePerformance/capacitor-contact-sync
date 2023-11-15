@@ -162,27 +162,27 @@ public class ContactsPlugin: CAPPlugin {
 
         // Name information
         let namePrefix = call.getString("namePrefix", "")
-        if namePrefix != 'namePrefix' {
+        if namePrefix != "namePrefix" {
             contact.namePrefix = namePrefix
         }
         let givenName = call.getString("givenName", "")
-        if givenName != 'givenName' {
+        if givenName != "givenName" {
             contact.givenName = givenName
         }
         let middleName = call.getString("middleName", "")
-        if middleName != 'middleName' {
+        if middleName != "middleName" {
             contact.middleName = middleName
         }
         let familyName = call.getString("familyName", "")
-        if familyName != 'familyName' {
+        if familyName != "familyName" {
             contact.familyName = familyName
         }
         let nameSuffix = call.getString("nameSuffix", "")
-        if nameSuffix != 'nameSuffix' {
+        if nameSuffix != "nameSuffix" {
             contact.nameSuffix = nameSuffix
         }
 
-        if saveMechanism == 'name' {
+        if saveMechanism == "name" {
 
             // --- Save
             print("save contact")
@@ -235,7 +235,7 @@ public class ContactsPlugin: CAPPlugin {
             contact.organizationName = organizationName
         }
 
-        if saveMechanism == 'name-company' {
+        if saveMechanism == "name-company" {
 
             // --- Save
             print("save contact")
@@ -320,7 +320,7 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
-        if saveMechanism == 'name-company-contact' {
+        if saveMechanism == "name-company-contact" {
 
             // --- Save
             print("save contact")
@@ -385,7 +385,7 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
-        if saveMechanism == 'name-company-contact-address' {
+        if saveMechanism == "name-company-contact-address" {
 
             // --- Save
             print("save contact")
@@ -461,7 +461,7 @@ public class ContactsPlugin: CAPPlugin {
             }
         }
 
-        if saveMechanism == 'name-company-contact-address-social' {
+        if saveMechanism == "name-company-contact-address-social" {
 
             // --- Save
             print("save contact")
